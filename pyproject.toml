@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastapi-admin"
+version = "0.1.0"
+description = "Django-inspired CLI tool for managing FastAPI applications"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typer[all]>=0.6.0",
+]
+
+[project.scripts]
+fastapi-admin = "fastapi_admin.cli:cli"
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/fastapi-admin"
+"Bug Tracker" = "https://github.com/yourusername/fastapi-admin/issues"
