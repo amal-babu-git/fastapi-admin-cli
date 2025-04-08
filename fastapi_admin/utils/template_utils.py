@@ -3,6 +3,7 @@ import tempfile
 import subprocess
 import shutil
 import typer
+import re
 from fastapi_admin.utils import file_utils
 
 TEMPLATE_REPO = "https://github.com/amal-babu-git/fastapi-admin-cli-template"
@@ -45,7 +46,7 @@ def fetch_project_template(project_dir, project_name):
             raise typer.Exit(code=1)
 
 
-def fetch_app_template(app_dir, app_name):
+def fetch_app_template(app_dir, app_name, template_vars=None):
     """Fetch app template from GitHub"""
     with tempfile.TemporaryDirectory() as temp_dir:
         try:
@@ -60,8 +61,15 @@ def fetch_app_template(app_dir, app_name):
             # Copy app template
             app_template_dir = os.path.join(temp_dir, "app_template")
             if os.path.exists(app_template_dir):
-                _copy_and_replace_template(app_template_dir, app_dir, {
-                                           "APP_NAME": app_name})
+                # Create base replacements with app_name
+                replacements = {"APP_NAME": app_name}
+
+                # Add template variables if provided
+                if template_vars:
+                    replacements.update(template_vars)
+
+                _copy_and_replace_template(
+                    app_template_dir, app_dir, replacements)
             else:
                 typer.echo("Error: App template not found in the repository.")
                 raise typer.Exit(code=1)
@@ -97,9 +105,11 @@ def _copy_and_replace_template(src_dir, dest_dir, replacements):
             # Handle both {{ variable }} and {{{ variable }}} style placeholders
             for placeholder, value in replacements.items():
                 content = content.replace(
-                    f"{{{{{placeholder}}}}}", value)  # Handle {{{var}}}
+                    f"{{{{{placeholder}}}}}", value)  # Handle {{var}}
                 content = content.replace(
                     f"{{{{ {placeholder} }}}}", value)  # Handle {{ var }}
+                # Handle ${variable} style placeholders
+                content = content.replace(f"${{{placeholder}}}", value)
 
             with open(dest_path, 'w', encoding='utf-8') as file:
                 file.write(content)
