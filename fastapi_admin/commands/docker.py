@@ -3,12 +3,48 @@ import subprocess
 import shutil
 from rich.console import Console
 from rich.panel import Panel
+import os
 
 app = typer.Typer(
     help="Docker container management operations",
     short_help="Docker operations"
 )
 console = Console()
+
+
+@app.command(name="cmd")
+def docker_cmd(cmd: str = typer.Argument(..., help="Docker command to run")):
+    """
+    To run regular docker commands, use the following format:
+        $ fastapi-admin docker cmd <command> <args...>
+    """
+    console.print(Panel(
+        "\n".join([
+            "[bold blue]Docker Management Commands:[/]",
+            "",
+            "[green]•[/] [white]fastapi-admin docker build[/] [dim](build the Docker container)[/]",
+            "[green]•[/] [white]fastapi-admin docker run[/] [dim](run the Docker container)[/]",
+            "",
+            "[bold yellow]Note:[/] [italic]Use 'docker cmd' command for other operations.[/]",
+            "[dim]Example: docker cmd ps, docke cmdr exec, etc.[/]",
+        ]),
+        title="Docker Management",
+        border_style="blue"
+    ))
+
+    try:
+        subprocess.run(f"docker-compose -f docker/compose/docker-compose.yml {cmd}", shell=True, check=True)
+        console.print(Panel(
+            f"✓ Command executed successfully: [bold blue]{cmd}[/]",
+            style="bold green"
+        ))
+    except subprocess.CalledProcessError as e:
+        console.print(Panel(
+            f"[bold red]Command failed:[/]\n{str(e)}",
+            title="Error",
+            border_style="red"
+        ))
+        raise typer.Exit(code=1)
 
 
 @app.command(name="build")
@@ -20,14 +56,18 @@ def build():
         $ fastapi-admin docker build
     """
     console.print(Panel("Setting up environment...", style="bold blue"))
-    try:
-        shutil.copy('env.txt', '.env')
-        console.print(Panel("✓ Environment file copied", style="bold green"))
-    except FileNotFoundError:
-        console.print(Panel(
-            "Warning: env.txt not found. Proceeding without environment file.",
-            style="bold yellow"
-        ))
+    if not os.path.exists('.env'):
+        try:
+            shutil.copy('env.txt', '.env')
+            console.print(
+                Panel("✓ Environment file copied", style="bold green"))
+        except FileNotFoundError:
+            console.print(Panel(
+                "Warning: env.txt not found. Proceeding without environment file.",
+                style="bold yellow"
+            ))
+    else:
+        console.print(Panel("✓ Using existing .env file", style="bold green"))
 
     console.print(Panel("Building Docker container...", style="bold blue"))
     try:

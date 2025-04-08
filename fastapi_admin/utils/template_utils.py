@@ -23,10 +23,16 @@ def fetch_project_template(project_dir, project_name):
             # Copy project template
             project_template_dir = os.path.join(temp_dir, "project_template")
             if os.path.exists(project_template_dir):
-                _copy_and_replace_template(project_template_dir, project_dir, {
-                                           "PROJECT_NAME": project_name})
+                # Define replacements for template variables
+                replacements = {
+                    "PROJECT_NAME": project_name,
+                    "project_name": project_name.lower(),  # For Python package name
+                    # Default description
+                    "project_description": f"FastAPI project {project_name}",
+                }
 
-                # Create manage.py wrapper
+                _copy_and_replace_template(
+                    project_template_dir, project_dir, replacements)
                 create_manage_py(project_dir, project_name)
             else:
                 typer.echo(
@@ -88,8 +94,12 @@ def _copy_and_replace_template(src_dir, dest_dir, replacements):
             with open(src_path, 'r', encoding='utf-8', errors='ignore') as file:
                 content = file.read()
 
+            # Handle both {{ variable }} and {{{ variable }}} style placeholders
             for placeholder, value in replacements.items():
-                content = content.replace(f"{{{{{placeholder}}}}}", value)
+                content = content.replace(
+                    f"{{{{{placeholder}}}}}", value)  # Handle {{{var}}}
+                content = content.replace(
+                    f"{{{{ {placeholder} }}}}", value)  # Handle {{ var }}
 
             with open(dest_path, 'w', encoding='utf-8') as file:
                 file.write(content)

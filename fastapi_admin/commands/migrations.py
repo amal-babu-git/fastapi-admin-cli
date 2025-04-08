@@ -1,6 +1,5 @@
 import typer
 import subprocess
-import shlex
 from rich.console import Console
 from rich.panel import Panel
 
