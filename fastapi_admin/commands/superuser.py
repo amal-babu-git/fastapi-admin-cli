@@ -1,10 +1,6 @@
 import typer
-import asyncio
-import sys
 import os
-import tempfile
 import requests
-from pathlib import Path
 from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
