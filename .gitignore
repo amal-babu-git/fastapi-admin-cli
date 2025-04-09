@@ -64,3 +64,6 @@ logs/
 .prompt.txt
 myproject/
 fastapi-admin-cli-template/
+docker-compose.yml
+Dockerfile
+testproject/
