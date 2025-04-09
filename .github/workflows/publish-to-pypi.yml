@@ -13,17 +13,36 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12'
+        python-version: '3.13'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install build twine
+        pip install build twine packaging requests
+    
+    - name: Check package version
+      id: check_version
+      run: |
+        # Extract version from pyproject.toml
+        VERSION=$(grep -m 1 'version' pyproject.toml | sed -E 's/version = "(.*)"/\1/g' | tr -d ' ')
+        echo "Current version: $VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if version exists on PyPI
+        if pip index versions fastapi-admin-cli | grep -q "${VERSION}"; then
+          echo "::error::Version ${VERSION} already exists on PyPI. Please update the version in pyproject.toml before creating a new release."
+          echo "exists=true" >> $GITHUB_OUTPUT
+          exit 1
+        else
+          echo "Version ${VERSION} is new and can be published to PyPI."
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
     
     - name: Build package
       run: python -m build
     
     - name: Publish package
+      if: steps.check_version.outputs.exists != 'true'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
