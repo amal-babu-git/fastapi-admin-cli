@@ -1,6 +1,10 @@
 import typer
 import asyncio
 import sys
+import os
+import tempfile
+import requests
+from pathlib import Path
 from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
@@ -10,6 +14,8 @@ app = typer.Typer(
     short_help="Superuser operations"
 )
 console = Console()
+
+SCRIPT_URL = "https://raw.githubusercontent.com/amal-babu-git/fastapi-admin-cli-template/refs/heads/main/scripts/create_superuser.py"
 
 
 @app.callback(invoke_without_command=True)
@@ -54,195 +60,91 @@ def _create_superuser_in_container(email: str, password: str, first_name: Option
     """Execute superuser creation inside the Docker container"""
     import subprocess
 
-    # Create a Python script with the exact implementation provided
-    script = """
-import asyncio
-import uuid
-import logging
-from typing import Optional
+    # Path to the script that should exist in the project
+    script_dir = os.path.join(os.getcwd(), "scripts")
+    script_path = os.path.join(script_dir, "create_superuser.py")
 
-try:
-    # Try to import from the expected module structure
-    from app.core.db import async_session_factory
-    from app.auth.models import User
-except ImportError:
-    try:
-        # Fall back to alternative module structures
-        from app.database import async_session_factory
-        from app.models import User
-    except ImportError:
-        print("ERROR: Could not import required modules. Check your project structure.")
-        exit(1)
+    # Create scripts directory if it doesn't exist
+    if not os.path.exists(script_dir):
+        console.print(f"[yellow]Creating scripts directory: {script_dir}[/]")
+        os.makedirs(script_dir)
 
-# Setup basic logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+    # Check if the script exists, if not download it
+    if not os.path.exists(script_path):
+        console.print(
+            "[yellow]create_superuser.py script not found, downloading it...[/]")
 
-async def create_superuser(
-    email: str, 
-    password: str, 
-    first_name: Optional[str] = None, 
-    last_name: Optional[str] = None
-) -> None:
-    \"\"\"
-    Create a superuser account for admin panel access.
-    
-    Args:
-        email: Email address for the superuser
-        password: Password for the superuser
-        first_name: Optional first name
-        last_name: Optional last name
-    \"\"\"
-    from fastapi_users.password import PasswordHelper
-    password_helper = PasswordHelper()
-    
-    print(f"Creating superuser with email: {email}")
-    
-    async with async_session_factory() as session:
         try:
-            # Try ORM approach first (SQLAlchemy models)
-            from sqlalchemy import select
-            
-            # Check if user exists
-            stmt = select(User).where(User.email == email)
-            result = await session.execute(stmt)
-            user = result.scalar_one_or_none()
-            
-            if user:
-                print(f"User with email {email} already exists.")
-                
-                # Update to superuser if needed
-                if not user.is_superuser:
-                    user.is_superuser = True
-                    user.is_verified = True
-                    await session.commit()
-                    print(f"Updated user {email} to superuser.")
-                return
-            
-            # Hash the password
-            hashed_password = password_helper.hash(password)
-            
-            # Create new superuser
-            user_id = uuid.uuid4() if hasattr(User, 'id') and isinstance(getattr(User, 'id').type, uuid.UUID) else None
-            
-            user = User(
-                id=user_id,
-                email=email,
-                hashed_password=hashed_password,
-                is_active=True,
-                is_superuser=True,
-                is_verified=True
-            )
-            
-            # Add optional fields if they exist on the model
-            if hasattr(User, 'first_name') and first_name:
-                user.first_name = first_name
-            if hasattr(User, 'last_name') and last_name:
-                user.last_name = last_name
-                
-            session.add(user)
-            await session.commit()
-            print(f"Superuser {email} created successfully!")
-            
+            response = requests.get(SCRIPT_URL)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+
+            with open(script_path, 'w', encoding='utf-8') as f:
+                f.write(response.text)
+
+            console.print(
+                f"[green]✓ Script downloaded successfully to {script_path}\n")
         except Exception as e:
-            # Fall back to raw SQL if ORM approach fails
-            print(f"ORM approach failed, trying with raw SQL: {str(e)}")
-            
-            try:
-                # Check if user exists
-                result = await session.execute("SELECT * FROM users WHERE email = :email", {"email": email})
-                user = result.fetchone()
-                
-                if user:
-                    print(f"User with email {email} already exists.")
-                    
-                    # Update to superuser if needed
-                    if not getattr(user, 'is_superuser', False):
-                        await session.execute(
-                            "UPDATE users SET is_superuser = TRUE, is_verified = TRUE WHERE email = :email",
-                            {"email": email}
-                        )
-                        await session.commit()
-                        print(f"Updated user {email} to superuser.")
-                    return
-                
-                # Hash the password
-                hashed_password = password_helper.hash(password)
-                
-                # Create new superuser with UUID
-                user_id = uuid.uuid4()
-                
-                # Insert the new user
-                await session.execute(
-                    \"\"\"
-                    INSERT INTO users (
-                        id, email, hashed_password, is_active, 
-                        is_superuser, is_verified, first_name, last_name
-                    ) VALUES (
-                        :id, :email, :hashed_password, TRUE,
-                        TRUE, TRUE, :first_name, :last_name
-                    )
-                    \"\"\",
-                    {
-                        "id": str(user_id),
-                        "email": email,
-                        "hashed_password": hashed_password,
-                        "first_name": first_name,
-                        "last_name": last_name
-                    }
-                )
-                
-                await session.commit()
-                print(f"Superuser {email} created successfully!")
-            except Exception as inner_e:
-                print(f"Error creating superuser: {str(inner_e)}")
-                raise
+            console.print(
+                f"[bold red]Failed to download the script:[/] {str(e)}")
+            raise Exception(
+                f"Failed to download create_superuser.py: {str(e)}")
 
-# Execute the async function with the provided parameters
-if __name__ == "__main__":
-    email = "{email}"
-    password = "{password}"
-    first_name = {repr(first_name)}
-    last_name = {repr(last_name)}
-    
-    asyncio.run(create_superuser(email, password, first_name, last_name))
-"""
-
-    # Create a temporary file in the container
-    temp_file = "/tmp/create_superuser.py"
-    setup_cmd = f"cat > {temp_file} << 'EOF'\n{script}\nEOF"
-
-    # Build the command to run the script
-    run_cmd = f"python {temp_file}"
-
-    # Full command: setup the script then run it
-    full_cmd = f"{setup_cmd} && {run_cmd}"
-
-    # Execute the command in the container
+    # Support both docker-compose and docker compose syntax
+    docker_cmd = "docker-compose"
     try:
-        # Support both docker-compose and docker compose syntax
-        docker_cmd = "docker-compose"
-        try:
-            subprocess.run(["docker-compose", "--version"],
-                           check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            docker_cmd = "docker compose"
+        subprocess.run(["docker-compose", "--version"],
+                       check=True, capture_output=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        docker_cmd = "docker compose"
 
+    # Build command arguments
+    command_args = ["python", "scripts/create_superuser.py", email, password]
+    if first_name:
+        command_args.extend(["--first-name", first_name])
+    if last_name:
+        command_args.extend(["--last-name", last_name])
+
+    command = " ".join(command_args)
+
+    console.print(f"[dim]Executing: {command}[/dim]")
+
+    try:
+        # Run the script in the container
         result = subprocess.run(
-            f"{docker_cmd} -f docker/compose/docker-compose.yml run --rm api sh -c '{full_cmd}'",
+            f"{docker_cmd} -f docker/compose/docker-compose.yml exec api {command}",
             shell=True,
             check=True,
             capture_output=True,
             text=True
         )
 
-        # Check for any output messages
+        # Check for specific output messages
         if result.stdout:
-            console.print(result.stdout)
+            # Check for already exists message
+            if "already exists" in result.stdout:
+                console.print(Panel(
+                    f"[bold yellow]User {email} already exists[/]",
+                    border_style="yellow"
+                ))
+            # Check for update to superuser message
+            elif "Updated user" in result.stdout and "to superuser status" in result.stdout:
+                console.print(Panel(
+                    f"[bold green]✓ User {email} updated to superuser status![/]",
+                    border_style="green"
+                ))
+            # Success message
+            elif "created successfully" in result.stdout:
+                console.print(Panel(
+                    f"[bold green]✓ Superuser {email} created successfully![/]",
+                    border_style="green"
+                ))
+            # Any other output
+            else:
+                console.print(result.stdout)
 
     except subprocess.CalledProcessError as e:
         # Handle environment variable warnings
-        if "variable is not set. Defaulting to a blank string" in e.stderr:
+        if hasattr(e, 'stderr') and e.stderr and "variable is not set. Defaulting to a blank string" in e.stderr:
             console.print(Panel(
                 "\n".join([
                     "[bold yellow]Warning: Environment variables not set[/]",
@@ -257,15 +159,37 @@ if __name__ == "__main__":
                 border_style="yellow"
             ))
 
+        # Handle case where container might not be running
+        if hasattr(e, 'stderr') and e.stderr and ("not running" in e.stderr or "No such container" in e.stderr):
+            console.print(Panel(
+                "\n".join([
+                    "[bold red]Container not running[/]",
+                    "",
+                    "The API container doesn't appear to be running.",
+                    "Please start your containers first:",
+                    "[dim]fastapi-admin docker run[/dim]"
+                ]),
+                title="Container Error",
+                border_style="red"
+            ))
+
+        # Handle database connection errors
+        if hasattr(e, 'stdout') and "Error creating superuser" in e.stdout:
+            error_msg = e.stdout.split("Error creating superuser: ")[1].strip()
+            console.print(Panel(
+                f"[bold red]Database error:[/]\n{error_msg}",
+                title="Database Error",
+                border_style="red"
+            ))
+
         console.print(Panel(
             f"[bold red]Failed to create superuser:[/]\n\n"
-            f"[bold white]STDOUT:[/]\n{e.stdout if e.stdout else 'No output'}\n\n"
-            f"[bold white]STDERR:[/]\n{e.stderr if e.stderr else 'No output'}",
+            f"[bold white]STDOUT:[/]\n{e.stdout if hasattr(e, 'stdout') and e.stdout else 'No output'}\n\n"
+            f"[bold white]STDERR:[/]\n{e.stderr if hasattr(e, 'stderr') and e.stderr else 'No output'}",
             title="Error Details",
             border_style="red"
         ))
-        raise Exception(
-            f"Failed to create superuser. See error details above.")
+        raise Exception("Failed to create superuser. See error details above.")
 
     # Return success
     return True

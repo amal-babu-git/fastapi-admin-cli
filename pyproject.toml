@@ -19,6 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "inflect>=6.0.5",
+    "requests>=2.32.3",
     "typer[all]>=0.6.0",
 ]
 
