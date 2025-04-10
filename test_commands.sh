@@ -38,18 +38,9 @@ execute() {
 # Check if FastAPI Admin CLI is installed
 check_installation() {
     section "Checking FastAPI Admin CLI Installation"
-    
-    if command -v fastapi-admin > /dev/null; then
-        echo -e "${GREEN}FastAPI Admin CLI is already installed${NC}"
-    else
-        echo -e "${YELLOW}Installing FastAPI Admin CLI...${NC}"
-        execute "pip install -e ." "continue"
-        
-        if ! command -v fastapi-admin > /dev/null; then
-            echo -e "${RED}Failed to install FastAPI Admin CLI${NC}"
-            exit 1
-        fi
-    fi
+
+    echo -e "${YELLOW}Installing FastAPI Admin CLI...${NC}"
+    execute "pip install -e ."
 }
 
 # Create a test project
@@ -77,6 +68,9 @@ create_project() {
     # Change to project directory
     cd "$PROJECT_NAME" || exit 1
     echo -e "${GREEN}Changed to directory: $(pwd)${NC}"
+    
+    # Examine project structure
+    execute "ls -la" "continue"
 }
 
 # Docker build command
@@ -99,12 +93,30 @@ test_docker_run() {
 test_uv_sync() {
     section "Testing UV Sync for Dependencies"
     
-    # Test uv sync if uv is available
+    # Test uv virtual environment creation if uv is available
     if command -v uv > /dev/null; then
+        execute "uv venv .venv" "continue"
+        
+        # Activate virtual environment (platform-dependent)
+        if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+            execute "source .venv/Scripts/activate" "continue"
+        else
+            execute "source .venv/bin/activate" "continue"
+        fi
+        
         execute "uv sync" "continue"
     else
-        echo -e "${YELLOW}uv not found, skipping uv sync test${NC}"
-        # Fall back to pip if uv is not available
+        echo -e "${YELLOW}uv not found, skipping uv venv and sync test${NC}"
+        # Fall back to pip and standard venv if uv is not available
+        execute "python -m venv .venv" "continue"
+        
+        # Activate virtual environment (platform-dependent)
+        if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+            execute "source .venv/Scripts/activate" "continue"
+        else
+            execute "source .venv/bin/activate" "continue"
+        fi
+        
         execute "pip install -e ." "continue"
     fi
 }
@@ -145,6 +157,9 @@ create_app() {
     
     # Create an app
     execute "fastapi-admin startapp users"
+    
+    # Examine app structure
+    execute "ls -la app/users" "continue"
 }
 
 # Test shell access (non-blocking)
@@ -162,18 +177,20 @@ test_shell() {
 test_local_dev() {
     section "Testing Local Development Setup"
     
-    # Create virtual environment 
-    execute "python -m venv venv" "continue"
-    
-    # Activate virtual environment (platform-dependent)
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-        execute "source venv/Scripts/activate" "continue"
-    else
-        execute "source venv/bin/activate" "continue"
-    fi
-    
     # Copy environment variables
     execute "cp env.txt .env" "continue"
+}
+
+# Test typical development workflow
+test_development_workflow() {
+    section "Testing Typical Development Workflow"
+    
+    echo -e "${YELLOW}Demonstrating typical development workflow...${NC}"
+    
+    # Create second app for the workflow example
+    execute "fastapi-admin startapp products" "continue"
+    
+    echo -e "${GREEN}✓ Typical development workflow commands executed${NC}"
 }
 
 # Cleanup function
@@ -208,6 +225,7 @@ main() {
     create_app
     test_shell
     test_local_dev
+    test_development_workflow
     
     # Return to original directory and cleanup
     cd "$orig_dir"

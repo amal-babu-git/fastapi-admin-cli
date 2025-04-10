@@ -12,6 +12,7 @@ app = typer.Typer(
 console = Console()
 
 SCRIPT_URL = "https://raw.githubusercontent.com/amal-babu-git/fastapi-admin-cli-template/refs/heads/main/scripts/create_superuser.py"
+# if the user using this command first time, we need to rebuilt docker because script folder is empty
 
 
 @app.callback(invoke_without_command=True)
@@ -79,6 +80,21 @@ def _create_superuser_in_container(email: str, password: str, first_name: Option
 
             console.print(
                 f"[green]✓ Script downloaded successfully to {script_path}\n")
+            
+            # FIXME:
+            console.print(
+                "[red]Please rebuild the docker container to include the new script.[/]")
+            console.print(
+                "\n".join([
+                    "[yellow]Please run the following commands to include the new script:[/]",
+                    "[dim]1. fastapi-admin docker down[/dim]",
+                    "[dim]2. fastapi-admin docker build[/dim]",
+                    "[dim]3. fastapi-admin docker run[/dim]"
+                ])
+            )
+            
+            raise Exception("Script downloaded, please down and rebuild the docker container")
+            
         except Exception as e:
             console.print(
                 f"[bold red]Failed to download the script:[/] {str(e)}")
