@@ -6,6 +6,8 @@ A Django-inspired CLI tool for managing FastAPI applications with a modular stru
 [![Python versions](https://img.shields.io/pypi/pyversions/fastapi-admin.svg)](https://pypi.org/project/fastapi-admin-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+📚 **Documentation**: [https://amal-babu-git.github.io/fastapi-admin-cli-docs/](https://amal-babu-git.github.io/fastapi-admin-cli-docs/)
+
 ## Available Commands
 
 | Command                     | Description                                      |
