@@ -21,6 +21,10 @@ def main(project_name: str):
     # Create project directory
     project_dir = os.path.join(os.getcwd(), project_name)
     file_utils.create_directory(project_dir)
+    
+    # Create script directory
+    script_dir = os.path.join(project_dir, "scripts")
+    file_utils.create_directory(script_dir)
 
     # Fetch project template
     template_utils.fetch_project_template(project_dir, project_name)
