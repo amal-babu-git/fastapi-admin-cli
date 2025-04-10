@@ -125,6 +125,20 @@ test_migrate() {
     execute "fastapi-admin db migrate" "continue"
 }
 
+# Test creating a superuser
+test_superuser() {
+    section "Testing Superuser Creation"
+    
+    # Create a superuser (this may fail in automated testing if the container is not running, hence "continue")
+    execute "fastapi-admin createsuperuser test@example.com password123" "continue"
+    
+    # Create a superuser with additional details
+    execute "fastapi-admin createsuperuser admin@example.com adminpass --first-name Admin --last-name User" "continue"
+    
+    echo -e "${YELLOW}Note: Superuser creation requires a running container with database access${NC}"
+    echo -e "${YELLOW}If these commands failed, ensure containers are running properly${NC}"
+}
+
 # Create a test app
 create_app() {
     section "Creating Test App"
@@ -190,6 +204,7 @@ main() {
     test_uv_sync
     test_makemigrations
     test_migrate
+    test_superuser
     create_app
     test_shell
     test_local_dev

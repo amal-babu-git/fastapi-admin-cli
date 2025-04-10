@@ -72,10 +72,6 @@ demo_installation() {
     
     echo -e "${GREEN}✓${NC} FastAPI Admin CLI has been installed successfully!"
     sleep $PAUSE_MEDIUM
-    
-    echo -e "Verify the installation:"
-    slow_type "fastapi-admin --version"
-    sleep $PAUSE_SHORT
 }
 
 demo_create_project() {
@@ -134,6 +130,28 @@ demo_database_migrations() {
     
     echo -e "${GREEN}✓${NC} Database is now set up with initial migration!"
     sleep $PAUSE_SHORT
+}
+
+demo_superuser() {
+    section "Creating a Superuser"
+    
+    echo -e "FastAPI Admin CLI allows you to create a superuser for the admin panel."
+    echo -e "Let's create a superuser with email and password:"
+    sleep $PAUSE_SHORT
+    
+    slow_type "fastapi-admin createsuperuser admin@example.com securepassword123"
+    
+    echo -e "${GREEN}✓${NC} Superuser created successfully!"
+    sleep $PAUSE_SHORT
+    
+    echo -e "\nYou can also add more details like first name and last name:"
+    slow_type "fastapi-admin createsuperuser admin2@example.com password123 --first-name Admin --last-name User"
+    
+    echo -e "${GREEN}✓${NC} Second superuser created with additional details!"
+    sleep $PAUSE_SHORT
+    
+    echo -e "\nThis user can now access the admin interface at '/admin' with these credentials."
+    sleep $PAUSE_MEDIUM
 }
 
 demo_create_app() {
@@ -200,7 +218,10 @@ demo_workflow() {
     echo -e "   $ fastapi-admin db makemigrations"
     echo -e "   $ fastapi-admin db migrate"
     
-    echo -e "\n${YELLOW}6. Access shell for database operations${NC}"
+    echo -e "\n${YELLOW}6. Create a superuser for the admin panel${NC}"
+    echo -e "   $ fastapi-admin createsuperuser admin@example.com password123"
+    
+    echo -e "\n${YELLOW}7. Access shell for database operations${NC}"
     echo -e "   $ fastapi-admin shell"
     
     sleep $PAUSE_LONG
@@ -216,6 +237,7 @@ main_demo() {
     demo_create_project
     demo_docker_setup
     demo_database_migrations
+    demo_superuser
     demo_create_app
     demo_local_development
     demo_workflow
