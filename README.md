@@ -6,6 +6,22 @@ A Django-inspired CLI tool for managing FastAPI applications with a modular stru
 [![Python versions](https://img.shields.io/pypi/pyversions/fastapi-admin.svg)](https://pypi.org/project/fastapi-admin-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Available Commands
+
+| Command                     | Description                                      |
+|-----------------------------|--------------------------------------------------|
+| `fastapi-admin startproject`| Create a new FastAPI project                     |
+| `fastapi-admin startapp`    | Create a new app within a FastAPI project        |
+| `fastapi-admin docker build`| Build Docker containers                          |
+| `fastapi-admin docker run`  | Run Docker containers                            |
+| `fastapi-admin docker down` | Stop and remove Docker containers                |
+| `fastapi-admin docker cmd`  | Run custom Docker commands                       |
+| `fastapi-admin db makemigrations` | Create new database migrations             |
+| `fastapi-admin db migrate`  | Apply database migrations                        |
+| `fastapi-admin db shell`    | Open a shell in the API container                |
+| `fastapi-admin createsuperuser` | Create a superuser for the admin panel       |
+| `fastapi-admin shell`       | Launch a shell inside a Docker container         |
+
 ## Features
 
 - 🚀 **Project Scaffolding**: Create well-structured FastAPI projects with a single command
@@ -41,7 +57,7 @@ This creates a new FastAPI project with the following structure:
 
 ```bash
 # Make sure you're in the project directory
-fastapi-admin startapp users
+fastapi-admin startapp blog
 ```
 
 This creates a new app with the following files:
@@ -53,7 +69,7 @@ This creates a new app with the following files:
 
 ### Docker Operations
 
-Build and run your application using Docker:
+Build, run, and manage your application using Docker:
 
 ```bash
 # Build Docker containers
@@ -61,6 +77,12 @@ fastapi-admin docker build
 
 # Run Docker containers
 fastapi-admin docker run
+
+# Stop and remove Docker containers
+fastapi-admin docker down
+
+# Run custom Docker commands
+fastapi-admin docker cmd "logs"
 ```
 
 ### Database Migrations
@@ -73,22 +95,42 @@ fastapi-admin db makemigrations -m "create users table"
 fastapi-admin db migrate
 ```
 
-### Database Administration
-
-The CLI provides several commands for database management inside the container shell:
+For other migration and related commands, use Alembic inside the Docker shell:
 
 ```bash
-# Launch a shell in the container
 fastapi-admin shell
-
-# Inside the container, you can use Alembic directly:
-alembic current          # Show current migration revision
-alembic history          # Show migration history
-alembic downgrade -1     # Downgrade to previous migration
-alembic stamp head       # Mark the database as being at the 'head' revision
+alembic upgrade head
 ```
 
-You can also run SQL queries directly using the SQLAlchemy admin panel included in the project.
+### Create a Superuser
+
+```bash
+fastapi-admin createsuperuser admin@example.com password123 --first-name Admin --last-name User
+```
+
+This command creates a superuser for the admin panel. If the user already exists, it updates the user to superuser status.
+
+### Shell Access
+
+```bash
+# Open a shell in the API container
+fastapi-admin db shell
+
+# Launch a shell inside a Docker container
+fastapi-admin shell --container-name fastapi-app
+```
+
+## Tech Stack
+
+The FastAPI Admin CLI leverages the following technologies:
+
+- **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python.
+- **Modular Structure**: Projects are organized into modular apps for better scalability and maintainability.
+- **PostgreSQL**: Default database backend for robust and scalable data storage.
+- **SQLModel**: Combines the best of SQLAlchemy and Pydantic for ORM operations and schema validation.
+- **Alembic**: Database migration management tool for versioning and applying schema changes.
+- **FastAPI-Users**: Provides authentication with email and password by default, including JWT-based access and refresh tokens.
+- **SQL Admin**: Built-in admin panel for managing database models with admin authentication.
 
 ### Authentication
 
@@ -215,7 +257,7 @@ If you have problems with database migrations:
 3. Verify your database connection settings
 4. Try running migrations manually inside the container shell:
    ```bash
-   fastapi-admin shell
+   fastapi-admin db shell
    alembic upgrade head
    ```
 5. Check Alembic logs for detailed error messages
