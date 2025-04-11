@@ -107,7 +107,7 @@ alembic upgrade head
 ### Create a Superuser
 
 ```bash
-fastapi-admin createsuperuser admin@example.com password123 --first-name Admin --last-name User
+fastapi-admin createsuperuser admin@example.com password123
 ```
 
 This command creates a superuser for the admin panel. If the user already exists, it updates the user to superuser status.
