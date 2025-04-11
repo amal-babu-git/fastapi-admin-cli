@@ -144,12 +144,6 @@ demo_superuser() {
     echo -e "${GREEN}✓${NC} Superuser created successfully!"
     sleep $PAUSE_SHORT
     
-    echo -e "\nYou can also add more details like first name and last name:"
-    slow_type "fastapi-admin createsuperuser admin2@example.com password123 --first-name Admin --last-name User"
-    
-    echo -e "${GREEN}✓${NC} Second superuser created with additional details!"
-    sleep $PAUSE_SHORT
-    
     echo -e "\nThis user can now access the admin interface at '/admin' with these credentials."
     sleep $PAUSE_MEDIUM
 }

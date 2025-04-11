@@ -144,9 +144,6 @@ test_superuser() {
     # Create a superuser (this may fail in automated testing if the container is not running, hence "continue")
     execute "fastapi-admin createsuperuser test@example.com password123" "continue"
     
-    # Create a superuser with additional details
-    execute "fastapi-admin createsuperuser admin@example.com adminpass --first-name Admin --last-name User" "continue"
-    
     echo -e "${YELLOW}Note: Superuser creation requires a running container with database access${NC}"
     echo -e "${YELLOW}If these commands failed, ensure containers are running properly${NC}"
 }

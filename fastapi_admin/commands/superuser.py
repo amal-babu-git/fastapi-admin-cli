@@ -1,7 +1,6 @@
 import typer
 import os
 import requests
-from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 
@@ -19,17 +18,12 @@ SCRIPT_URL = "https://raw.githubusercontent.com/amal-babu-git/fastapi-admin-cli-
 def main(
     email: str = typer.Argument(..., help="Email of the superuser"),
     password: str = typer.Argument(..., help="Password for the superuser"),
-    first_name: Optional[str] = typer.Option(
-        None, help="First name of the superuser"),
-    last_name: Optional[str] = typer.Option(
-        None, help="Last name of the superuser")
 ):
     """
     Create a superuser for the admin panel.
 
     Example:
         $ fastapi-admin createsuperuser admin@example.com password123
-        $ fastapi-admin createsuperuser admin@example.com password123 --first-name Admin --last-name User
     """
     console.print(Panel(
         f"Creating superuser with email: [bold blue]{email}[/]",
@@ -38,7 +32,7 @@ def main(
 
     try:
         # We need to execute inside the container where the database is accessible
-        _create_superuser_in_container(email, password, first_name, last_name)
+        _create_superuser_in_container(email, password)
 
         console.print(Panel(
             f"[bold green]✓ Superuser {email} created successfully![/]",
@@ -53,7 +47,7 @@ def main(
         raise typer.Exit(code=1)
 
 
-def _create_superuser_in_container(email: str, password: str, first_name: Optional[str], last_name: Optional[str]):
+def _create_superuser_in_container(email: str, password: str):
     """Execute superuser creation inside the Docker container"""
     import subprocess
 
@@ -79,22 +73,8 @@ def _create_superuser_in_container(email: str, password: str, first_name: Option
                 f.write(response.text)
 
             console.print(
-                f"[green]✓ Script downloaded successfully to {script_path}\n")
-            
-            # FIXME:
-            console.print(
-                "[red]Please rebuild the docker container to include the new script.[/]")
-            console.print(
-                "\n".join([
-                    "[yellow]Please run the following commands to include the new script:[/]",
-                    "[dim]1. fastapi-admin docker down[/dim]",
-                    "[dim]2. fastapi-admin docker build[/dim]",
-                    "[dim]3. fastapi-admin docker run[/dim]"
-                ])
-            )
-            
-            raise Exception("Script downloaded, please down and rebuild the docker container")
-            
+                f"[green]✓ Script downloaded successfully to {script_path}[/]")
+
         except Exception as e:
             console.print(
                 f"[bold red]Failed to download the script:[/] {str(e)}")
@@ -110,20 +90,20 @@ def _create_superuser_in_container(email: str, password: str, first_name: Option
         docker_cmd = "docker compose"
 
     # Build command arguments
-    command_args = ["python", "scripts/create_superuser.py", email, password]
-    if first_name:
-        command_args.extend(["--first-name", first_name])
-    if last_name:
-        command_args.extend(["--last-name", last_name])
+    command_args = [
+        "python", "/app/scripts/create_superuser.py", email, password]
 
     command = " ".join(command_args)
 
     console.print(f"[dim]Executing: {command}[/dim]")
 
+    # Mount local scripts directory to /app/scripts in the container
+    volume_mount = f"-v {script_dir}:/app/scripts"
+
     try:
-        # Run the script in the container
+        # Run the script in the container with volume mount
         result = subprocess.run(
-            f"{docker_cmd} -f docker/compose/docker-compose.yml exec api {command}",
+            f'{docker_cmd} -f docker/compose/docker-compose.yml run --rm {volume_mount} api sh -c "{command}"',
             shell=True,
             check=True,
             capture_output=True,
@@ -191,6 +171,24 @@ def _create_superuser_in_container(email: str, password: str, first_name: Option
             console.print(Panel(
                 f"[bold red]Database error:[/]\n{error_msg}",
                 title="Database Error",
+                border_style="red"
+            ))
+
+        # Handle script not found errors
+        if hasattr(e, 'stderr') and e.stderr and "No such file or directory" in e.stderr:
+            console.print(Panel(
+                "\n".join([
+                    "[bold red]Script not found in container[/]",
+                    "",
+                    "The create_superuser.py script couldn't be found in the container.",
+                    "This could be due to a volume mounting issue.",
+                    "",
+                    "[yellow]Try manually copying the script to your container:[/]",
+                    f"1. Make sure the script exists at {script_path}",
+                    "2. Ensure proper permissions on the script file",
+                    "3. Check Docker volume mounting permissions"
+                ]),
+                title="Script Access Error",
                 border_style="red"
             ))
 
