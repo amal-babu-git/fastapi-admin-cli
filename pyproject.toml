@@ -8,13 +8,12 @@ version = "0.1.13"
 description = "Django-inspired CLI tool for managing FastAPI applications"
 readme = "README.md"
 requires-python = ">=3.13"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Amal Babu", email = "developer.amalbabu@gmail.com"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -31,3 +30,6 @@ fastapi-admin = "fastapi_admin.cli:cli"
 [project.urls]
 "Homepage" = "https://github.com/amal-babu-git/fastapi-admin-cli"
 "Bug Tracker" = "https://github.com/amal-babu-git/fastapi-admin-cli/issues"
+
+[tool.setuptools]
+packages = ["fastapi_admin", "fastapi_admin.commands", "fastapi_admin.utils"]
