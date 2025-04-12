@@ -8,6 +8,20 @@ A Django-inspired CLI tool for managing FastAPI applications with a modular stru
 
 📚 **Documentation**: [https://amal-babu-git.github.io/fastapi-admin-cli-docs/](https://amal-babu-git.github.io/fastapi-admin-cli-docs/)
 
+## Demonstration
+
+See FastAPI Admin CLI in action:
+
+![FastAPI Admin CLI Demo](assets/1.gif)
+
+The demonstration shows how to:
+- Install the package
+- Create a new project
+- Create apps within the project
+- Use Docker integration
+- Set up database migrations
+- Configure local development
+
 ## Available Commands
 
 | Command                     | Description                                      |
